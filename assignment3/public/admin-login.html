@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+        body {
+            background: #eef3f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            width: 350px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1a73e8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0c57c7;
+        }
+        .err {
+            color: red;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Admin Login</h2>
+
+    <input id="username" type="text" placeholder="Username" required>
+    <input id="password" type="password" placeholder="Password" required>
+
+    <button onclick="login()">Login</button>
+
+    <div id="errMsg" class="err"></div>
+
+    <p><a href="index.html">Back to Home</a></p>
+</div>
+
+<script>
+async function login() {
+    const user = document.getElementById("username").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    const err = document.getElementById("errMsg");
+
+    err.textContent = "";
+
+    if (user !== "admin" || pass !== "admin123") {
+        err.textContent = "Invalid login!";
+        return;
+    }
+
+    // In a real system, you'd verify with server. For assignment purpose:
+    window.location.href = "admin-dashboard.html";
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ER Admin Dashboard</title>
+    <style>
+        body {
+            background: #eef3f7;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 10px;
+        }
+        .top-bar button {
+            padding: 8px 14px;
+            background: #6c757d;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .top-bar button:hover {
+            background: #555b61;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            width: 400px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .card-wide {
+            width: 700px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th, td {
+            border-bottom: 1px solid #ccc;
+            padding: 6px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        button {
+            padding: 6px 10px;
+            background: #1a73e8;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0c57c7;
+        }
+        .remove-btn {
+            background: #d9534f;
+        }
+        .remove-btn:hover {
+            background: #c5433e;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        .msg {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .ok { color: green; }
+        .err { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <button onclick="window.location.href='admin-login.html'">Logout</button>
+</div>
+
+<h1>ER Admin Dashboard</h1>
+
+<div class="container">
+    
+    <!-- Left: Waiting Patients -->
+    <div class="card card-wide">
+        <h3>Waiting Patients</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Gender</th>
+                    <th>Injury</th>
+                    <th>Pain</th>
+                    <th>Severity</th>
+                    <th>Position</th>
+                    <th>Est. Wait (min)</th>
+                    <th>Arrival</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="patientTable"></tbody>
+        </table>
+    </div>
+
+    <!-- Right: Add Patient Form -->
+    <div class="card">
+        <h3>Add Patient</h3>
+
+        <input id="name" type="text" placeholder="Name">
+        <input id="code" type="text" placeholder="3-letter Code">
+
+        <label>Gender</label>
+        <select id="gender">
+            <option value="">Select gender</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+        </select>
+
+        <label>Injury Type</label>
+        <select id="injury">
+            <option value="">Select injury</option>
+            <option value="head">Head</option>
+            <option value="bone_or_muscle">Bone or muscle</option>
+            <option value="stomach">Stomach</option>
+        </select>
+
+        <label>Pain Level</label>
+        <input id="pain" type="number" min="1" max="10">
+
+        <button onclick="addPatient()">Add</button>
+
+        <div id="msg" class="msg"></div>
+    </div>
+
+</div>
+
+<script>
+async function loadPatients() {
+    const res = await fetch('/api/admin/patients');
+    const data = await res.json();
+    const table = document.getElementById("patientTable");
+    table.innerHTML = "";
+
+    if (!data.success) return;
+
+    data.patients.forEach(p => {
+        const row = `
+            <tr>
+                <td>${p.name}</td>
+                <td>${p.card_nb}</td>
+                <td>${p.gender || ''}</td>
+                <td>${p.injury_type}</td>
+                <td>${p.pain_level}</td>
+                <td>${p.priority_description}</td>
+                <td>${p.position}</td>
+                <td>${p.estimatedWait}</td>
+                <td>${new Date(p.arrival_time).toLocaleTimeString()}</td>
+                <td>
+                    <button class="remove-btn" onclick="markTreated(${p.id})">Done</button>
+                </td>
+            </tr>
+        `;
+        table.innerHTML += row;
+    });
+}
+
+async function markTreated(id) {
+    await fetch(`/api/admin/patients/${id}/treated`, { method: "PATCH" });
+    loadPatients();
+}
+
+async function addPatient() {
+    const msg = document.getElementById("msg");
+    msg.textContent = "";
+    msg.className = "msg";
+
+    const name = document.getElementById("name").value.trim();
+    const code = document.getElementById("code").value.trim();
+    const gender = document.getElementById("gender").value;
+    const injury_type = document.getElementById("injury").value;
+    const pain_level = document.getElementById("pain").value;
+
+    if (!name || !code || !injury_type || !pain_level || !gender) {
+        msg.textContent = "All fields required!";
+        msg.className = "msg err";
+        return;
+    }
+
+    const res = await fetch('/api/admin/patients', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, code, injury_type, pain_level, gender })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+        msg.textContent = "Patient added!";
+        msg.className = "msg ok";
+
+        // clear form
+        document.getElementById("name").value = "";
+        document.getElementById("code").value = "";
+        document.getElementById("gender").value = "";
+        document.getElementById("injury").value = "";
+        document.getElementById("pain").value = "";
+
+        loadPatients();
+    } else {
+        msg.textContent = data.message || "Error adding patient.";
+        msg.className = "msg err";
+    }
+}
+
+// Load table on startup + refresh every 4s
+loadPatients();
+setInterval(loadPatients, 4000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Check-In</title>
+    <style>
+        body {
+            background: #eef3f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            width: 350px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1a73e8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0c57c7;
+        }
+        .message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .message.ok {
+            color: green;
+        }
+        .message.err {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Emergency Check-In</h2>
+    <p>Tell us your symptoms to get your estimated ER wait time.</p>
+
+    <input id="name" type="text" placeholder="Full Name" required>
+
+    <label>Gender</label>
+    <select id="gender" required>
+        <option value="">Select gender</option>
+        <option value="female">Female</option>
+        <option value="male">Male</option>
+        <option value="other">Other</option>
+    </select>
+
+    <label>Injury Type</label>
+    <select id="injury_type" required>
+        <option value="">Select injury type</option>
+        <option value="head">Head injury</option>
+        <option value="bone_or_muscle">Bone or muscle</option>
+        <option value="stomach">Stomach / abdominal</option>
+    </select>
+
+    <label>Pain Level (1–10)</label>
+    <input id="pain_level" type="number" min="1" max="10" required>
+
+    <button onclick="submitCheckIn()">Complete Check-In</button>
+
+    <div id="msg" class="message"></div>
+
+    <p><a href="index.html">Back to Home</a></p>
+</div>
+
+<script>
+async function submitCheckIn() {
+    const name = document.getElementById("name").value.trim();
+    const injury_type = document.getElementById("injury_type").value.trim();
+    const pain_level = document.getElementById("pain_level").value.trim();
+    const gender = document.getElementById("gender").value;
+    const msgEl = document.getElementById("msg");
+
+    msgEl.textContent = "";
+    msgEl.className = "message";
+
+    if (!name || !injury_type || !pain_level || !gender) {
+        msgEl.textContent = "Please fill in all fields.";
+        msgEl.classList.add("err");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/patients/checkin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, injury_type, pain_level, gender })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            msgEl.innerHTML =
+                `Check-in successful! Your code is <strong>${data.code}</strong>`;
+            msgEl.classList.add("ok");
+
+            // Optional: clear form
+            document.getElementById("name").value = "";
+            document.getElementById("injury_type").value = "";
+            document.getElementById("pain_level").value = "";
+            document.getElementById("gender").value = "";
+        } else {
+            msgEl.textContent = "Error: " + (data.message || "Server error.");
+            msgEl.classList.add("err");
+        }
+    } catch (err) {
+        console.error(err);
+        msgEl.textContent = "Server error. Please try again.";
+        msgEl.classList.add("err");
+    }
+}
+</script>
+
+</body>
+</html>
